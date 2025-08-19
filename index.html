@@ -1,140 +1,152 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> 목차</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HTML Library — 자동 목차</title>
+  <meta name="description" content="/html 폴더의 페이지들을 자동으로 불러와 보여주는 목차 페이지" />
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: { soft: '0 10px 25px rgba(0,0,0,0.08)' },
+          colors: { brand: { 500: '#3b82f6' } }
         }
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-        }
-        #file-list {
-            list-style: none;
-            padding: 0;
-        }
-        #file-list li {
-            background: #ecf0f1;
-            margin: 8px 0;
-            border-radius: 5px;
-            transition: transform 0.2s;
-        }
-        #file-list li:hover {
-            transform: translateX(5px);
-        }
-        #file-list a {
-            display: block;
-            padding: 15px 20px;
-            text-decoration: none;
-            color: #34495e;
-            font-weight: 500;
-        }
-        #file-list a:hover {
-            color: #3498db;
-        }
-        .loading, .error {
-            text-align: center;
-            font-size: 1.2em;
-            color: #7f8c8d;
-            padding: 20px;
-        }
-    </style>
+      },
+      darkMode: 'media'
+    }
+  </script>
+  <style>
+    .fade-in { animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn { from {opacity: 0; transform: translateY(4px);} to {opacity: 1; transform: translateY(0);} }
+  </style>
 </head>
-<body>
-
-    <div class="container">
-        <h1>AI로 작성한 HTML 페이지 목차</h1>
-        <p><code>html/</code> 폴더에 있는 파일 목록입니다. 자동으로 업데이트됩니다.</p>
-        <ul id="file-list">
-            <li class="loading">목록을 불러오는 중입니다...</li>
-        </ul>
+<body class="min-h-screen bg-gray-50 dark:bg-neutral-900 text-gray-900 dark:text-gray-50">
+  <header class="sticky top-0 z-10 backdrop-blur bg-white/70 dark:bg-neutral-900/70 border-b border-black/5 dark:border-white/10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h9l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2 0v12h12V10h-4a2 2 0 0 1-2-2V4H6z"/></svg>
+      <h1 class="text-xl font-semibold tracking-tight">/html 자동 목차</h1>
+      <span id="repoTag" class="ml-auto text-xs px-2 py-1 rounded-full bg-black/5 dark:bg-white/10"></span>
     </div>
+  </header>
 
-    <script>
-        // 사용자 이름과 리포지토리 이름을 설정합니다.
-        // seonil.github.io 주소를 사용하시므로 아래와 같이 설정하면 됩니다.
-        const owner = 'seonil';
-        const repo = 'seonil.github.io';
-        const path = 'html'; // 파일을 찾을 폴더
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <section class="mb-4 grid gap-3 sm:grid-cols-2">
+      <label class="flex items-center gap-2 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-neutral-800 px-3 py-2 shadow-soft">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 opacity-60"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"/></svg>
+        <input id="search" type="search" placeholder="파일 검색 (예: carousel, demo)" class="w-full bg-transparent outline-none text-sm py-1" />
+      </label>
+      <div class="flex items-center justify-end gap-2 text-sm">
+        <span class="opacity-70">표시: </span>
+        <label class="inline-flex items-center gap-1"><input type="checkbox" id="showAll" class="accent-blue-500"> <span>.html 외 파일 포함</span></label>
+      </div>
+    </section>
 
-        // GitHub API 주소
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    <section>
+      <div id="list" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+      <div id="status" class="mt-6 text-sm opacity-70"></div>
+    </section>
+  </main>
 
-        // 파일 목록을 가져와서 페이지에 표시하는 함수
-        async function fetchAndDisplayFiles() {
-            const listElement = document.getElementById('file-list');
+  <footer class="max-w-5xl mx-auto px-4 py-8 text-xs opacity-70">
+    GitHub API를 사용해 실시간으로 <code>/html</code> 디렉터리 목록을 불러옵니다. 퍼블릭 리포지토리에서만 동작하며, 과도한 요청 시 제한될 수 있습니다.
+  </footer>
 
-            try {
-                const response = await fetch(apiUrl);
+  <template id="card-tpl">
+    <a class="group rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-neutral-800 p-4 shadow-soft hover:shadow-md transition-shadow fade-in flex flex-col gap-2" target="_self">
+      <div class="flex items-center gap-2">
+        <span class="icon w-5 h-5 opacity-70"></span>
+        <h3 class="title text-sm font-medium line-clamp-1"></h3>
+      </div>
+      <p class="meta text-xs opacity-70"></p>
+    </a>
+  </template>
 
-                // API 요청이 실패하면 오류 메시지 표시
-                if (!response.ok) {
-                    throw new Error(`GitHub API 요청 실패: ${response.status}`);
-                }
+  <script>
+    (async function () {
+      const listEl = document.getElementById('list');
+      const statusEl = document.getElementById('status');
+      const searchEl = document.getElementById('search');
+      const showAllEl = document.getElementById('showAll');
+      const cardTpl = document.getElementById('card-tpl');
+      const repoTag = document.getElementById('repoTag');
 
-                const files = await response.json();
+      // 1) 유저/리포 자동 추론 (user pages: {owner}.github.io)
+      const host = location.host; // e.g., seonil.github.io
+      const isUserPages = /\.github\.io$/i.test(host);
+      const owner = isUserPages ? host.replace(/\.github\.io$/i, '') : host.split('.')[0];
+      const repo = isUserPages ? `${owner}.github.io` : (location.pathname.split('/')[1] || '');
+      repoTag.textContent = `${owner}/${repo}`;
 
-                // 로딩 메시지 삭제
-                listElement.innerHTML = '';
+      // 2) GitHub Contents API URL 구성
+      const branch = (new URLSearchParams(location.search)).get('ref') || 'main'; // 대부분 main. 필요시 ?ref=gh-pages
+      const apiUrl = `https://api.github.com/repos/seonil/html/contents/html?ref=${encodeURIComponent(branch)}`;
 
-                // .html 파일만 필터링
-                const htmlFiles = files.filter(file => file.name.endsWith('.html'));
-                
-                if (htmlFiles.length === 0) {
-                     listElement.innerHTML = '<li>표시할 HTML 파일이 없습니다.</li>';
-                     return;
-                }
+      // 아이콘 SVG
+      const icons = {
+        html: '<svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="m12 17.56l3.61-1l.5-5.61H9.67l-.17-2h6.78l.17-1.78H7.5l.5 5.56h6.06l-.22 2.5l-1.84.5l-1.84-.5l-.12-1.28H8.94l.22 2.5z"/></svg>',
+        file: '<svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM13 9V3.5L18.5 9z"/></svg>',
+        dir: '<svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="currentColor" d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z"/></svg>'
+      };
 
-                // 각 파일을 리스트 아이템으로 만들어 추가
-                htmlFiles.forEach(file => {
-                    const listItem = document.createElement('li');
-                    const link = document.createElement('a');
+      function makeCard(item) {
+        const node = cardTpl.content.firstElementChild.cloneNode(true);
+        const title = node.querySelector('.title');
+        const meta = node.querySelector('.meta');
+        const icon = node.querySelector('.icon');
 
-                    // 링크 주소 설정 (예: 'html/carousel.html')
-                    link.href = file.path;
-                    
-                    // 링크 텍스트 설정 (예: 'carousel')
-                    // .html 확장자를 제거하여 깔끔하게 표시
-                    const fileName = file.name.replace('.html', '');
-                    link.textContent = fileName.charAt(0).toUpperCase() + fileName.slice(1); // 첫 글자 대문자로 변경
+        const isHtml = item.type === 'file' && /\.html?$/i.test(item.name);
+        icon.innerHTML = isHtml ? icons.html : (item.type === 'dir' ? icons.dir : icons.file);
 
-                    listItem.appendChild(link);
-                    listElement.appendChild(listItem);
-                });
+        title.textContent = item.name;
+        node.href = item.type === 'dir' ? `html/${item.name}/` : `html/${item.name}`;
 
-            } catch (error) {
-                console.error('파일 목록을 불러오는 중 오류 발생:', error);
-                const errorElement = document.querySelector('.loading');
-                if (errorElement) {
-                    errorElement.textContent = '목록을 불러오는데 실패했습니다. 리포지토리 설정이나 API 제한을 확인해주세요.';
-                    errorElement.classList.remove('loading');
-                    errorElement.classList.add('error');
-                }
-            }
+        const sizeKb = item.size != null ? (item.size / 1024).toFixed(1) + ' KB' : '';
+        meta.textContent = `${item.type.toUpperCase()}${sizeKb ? ' · ' + sizeKb : ''}`;
+        return node;
+      }
+
+      function render(items) {
+        listEl.innerHTML = '';
+        items.forEach(it => listEl.appendChild(makeCard(it)));
+        statusEl.textContent = `${items.length}개 항목`;
+      }
+
+      function filterItems(items) {
+        const q = searchEl.value.trim().toLowerCase();
+        const onlyHtml = !showAllEl.checked;
+        return items.filter(it => {
+          if (it.name === 'index.html') return false; // 자기 자신 제외
+          if (it.name.startsWith('_')) return false;  // 숨김 규칙
+          if (onlyHtml && !(it.type === 'file' && /\.html?$/i.test(it.name))) return false;
+          if (q && !it.name.toLowerCase().includes(q)) return false;
+          return true;
+        }).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      }
+
+      async function fetchList() {
+        statusEl.textContent = '불러오는 중…';
+        try {
+          const res = await fetch(apiUrl, { headers: { 'Accept': 'application/vnd.github+json' } });
+          if (!res.ok) throw new Error(`GitHub API 오류: ${res.status}`);
+          const data = await res.json();
+          if (!Array.isArray(data)) throw new Error('예상치 못한 응답 형식');
+          const items = filterItems(data);
+          render(items);
+        } catch (err) {
+          console.error(err);
+          statusEl.innerHTML = `목록을 불러오지 못했습니다. <br class="hidden sm:inline"/>`+
+            `리포지토리가 비공개이거나 브랜치명이 다를 수 있습니다. <code>?ref=gh-pages</code> 또는 <code>?ref=main</code>을 URL에 붙여 시도해 보세요.`;
         }
+      }
 
-        // 페이지가 로드되면 함수 실행
-        document.addEventListener('DOMContentLoaded', fetchAndDisplayFiles);
-    </script>
+      searchEl.addEventListener('input', fetchList);
+      showAllEl.addEventListener('change', fetchList);
 
+      fetchList();
+    })();
+  </script>
 </body>
 </html>
