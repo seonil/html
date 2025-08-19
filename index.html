@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> 목차</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        #file-list {
+            list-style: none;
+            padding: 0;
+        }
+        #file-list li {
+            background: #ecf0f1;
+            margin: 8px 0;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+        #file-list li:hover {
+            transform: translateX(5px);
+        }
+        #file-list a {
+            display: block;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #34495e;
+            font-weight: 500;
+        }
+        #file-list a:hover {
+            color: #3498db;
+        }
+        .loading, .error {
+            text-align: center;
+            font-size: 1.2em;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>AI로 작성한 HTML 페이지 목차</h1>
+        <p><code>html/</code> 폴더에 있는 파일 목록입니다. 자동으로 업데이트됩니다.</p>
+        <ul id="file-list">
+            <li class="loading">목록을 불러오는 중입니다...</li>
+        </ul>
+    </div>
+
+    <script>
+        // 사용자 이름과 리포지토리 이름을 설정합니다.
+        // seonil.github.io 주소를 사용하시므로 아래와 같이 설정하면 됩니다.
+        const owner = 'seonil';
+        const repo = 'seonil.github.io';
+        const path = 'html'; // 파일을 찾을 폴더
+
+        // GitHub API 주소
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+        // 파일 목록을 가져와서 페이지에 표시하는 함수
+        async function fetchAndDisplayFiles() {
+            const listElement = document.getElementById('file-list');
+
+            try {
+                const response = await fetch(apiUrl);
+
+                // API 요청이 실패하면 오류 메시지 표시
+                if (!response.ok) {
+                    throw new Error(`GitHub API 요청 실패: ${response.status}`);
+                }
+
+                const files = await response.json();
+
+                // 로딩 메시지 삭제
+                listElement.innerHTML = '';
+
+                // .html 파일만 필터링
+                const htmlFiles = files.filter(file => file.name.endsWith('.html'));
+                
+                if (htmlFiles.length === 0) {
+                     listElement.innerHTML = '<li>표시할 HTML 파일이 없습니다.</li>';
+                     return;
+                }
+
+                // 각 파일을 리스트 아이템으로 만들어 추가
+                htmlFiles.forEach(file => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+
+                    // 링크 주소 설정 (예: 'html/carousel.html')
+                    link.href = file.path;
+                    
+                    // 링크 텍스트 설정 (예: 'carousel')
+                    // .html 확장자를 제거하여 깔끔하게 표시
+                    const fileName = file.name.replace('.html', '');
+                    link.textContent = fileName.charAt(0).toUpperCase() + fileName.slice(1); // 첫 글자 대문자로 변경
+
+                    listItem.appendChild(link);
+                    listElement.appendChild(listItem);
+                });
+
+            } catch (error) {
+                console.error('파일 목록을 불러오는 중 오류 발생:', error);
+                const errorElement = document.querySelector('.loading');
+                if (errorElement) {
+                    errorElement.textContent = '목록을 불러오는데 실패했습니다. 리포지토리 설정이나 API 제한을 확인해주세요.';
+                    errorElement.classList.remove('loading');
+                    errorElement.classList.add('error');
+                }
+            }
+        }
+
+        // 페이지가 로드되면 함수 실행
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayFiles);
+    </script>
+
+</body>
+</html>
