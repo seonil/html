@@ -82,7 +82,7 @@
 
       // 2) GitHub Contents API URL 구성
       const branch = (new URLSearchParams(location.search)).get('ref') || 'main'; // 대부분 main. 필요시 ?ref=gh-pages
-      const apiUrl = `https://api.github.com/repos/seonil/html/contents/html?ref=${encodeURIComponent(branch)}`;
+      const apiUrl = `https://api.github.com/repos/seonil/html/contents/?ref=main`;
 
       // 아이콘 SVG
       const icons = {
