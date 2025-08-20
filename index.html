@@ -101,7 +101,7 @@
         icon.innerHTML = isHtml ? icons.html : (item.type === 'dir' ? icons.dir : icons.file);
 
         title.textContent = item.name;
-        node.href = item.type === 'dir' ? `html/${item.name}/` : `html/${item.name}`;
+        node.href = item.type === 'dir' ? `./${item.name}/` : `./${item.name}`;
 
         const sizeKb = item.size != null ? (item.size / 1024).toFixed(1) + ' KB' : '';
         meta.textContent = `${item.type.toUpperCase()}${sizeKb ? ' · ' + sizeKb : ''}`;
